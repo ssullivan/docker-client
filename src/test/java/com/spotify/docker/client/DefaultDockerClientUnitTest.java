@@ -29,6 +29,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -332,6 +333,55 @@ public class DefaultDockerClientUnitTest {
     assertThat(nodeInfo.managerStatus().addr(), is("172.17.0.2:2377"));
     assertThat(nodeInfo.managerStatus().leader(), is(true));
     assertThat(nodeInfo.managerStatus().reachability(), is("reachable"));
+  }
+
+  @Test
+  public void testInspectNonLeaderNode() throws Exception {
+    final DefaultDockerClient dockerClient = new DefaultDockerClient(builder);
+
+    // build() calls /version to check what format of header to send
+    enqueueServerApiVersion("1.27");
+
+    server.enqueue(new MockResponse()
+        .setResponseCode(200)
+        .addHeader("Content-Type", "application/json")
+        .setBody(
+            fixture("fixtures/1.27/nodeInfoNonLeader.json")
+        )
+    );
+
+    NodeInfo nodeInfo = dockerClient.inspectNode("24ifsmvkjbyhk");
+    assertThat(nodeInfo, notNullValue());
+    assertThat(nodeInfo.id(), is("24ifsmvkjbyhk"));
+    assertThat(nodeInfo.status(), notNullValue());
+    assertThat(nodeInfo.status().addr(), is("172.17.0.2"));
+    assertThat(nodeInfo.managerStatus(), notNullValue());
+    assertThat(nodeInfo.managerStatus().addr(), is("172.17.0.2:2377"));
+    assertThat(nodeInfo.managerStatus().leader(), nullValue());
+    assertThat(nodeInfo.managerStatus().reachability(), is("reachable"));
+  }
+
+  @Test
+  public void testInspectNodeNonManager() throws Exception {
+    final DefaultDockerClient dockerClient = new DefaultDockerClient(builder);
+
+    // build() calls /version to check what format of header to send
+    enqueueServerApiVersion("1.27");
+
+    server.enqueue(new MockResponse()
+        .setResponseCode(200)
+        .addHeader("Content-Type", "application/json")
+        .setBody(
+            fixture("fixtures/1.27/nodeInfoNonManager.json")
+        )
+    );
+
+    NodeInfo nodeInfo = dockerClient.inspectNode("24ifsmvkjbyhk");
+    assertThat(nodeInfo, notNullValue());
+    assertThat(nodeInfo.id(), is("24ifsmvkjbyhk"));
+    assertThat(nodeInfo.status(), notNullValue());
+    assertThat(nodeInfo.status().addr(), is("172.17.0.2"));
+    assertThat(nodeInfo.managerStatus(), nullValue());
   }
 
   @Test(expected = NodeNotFoundException.class)

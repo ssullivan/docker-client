@@ -27,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
+import javax.annotation.Nullable;
 
 
 @AutoValue
@@ -34,6 +35,7 @@ import com.google.auto.value.AutoValue;
 public abstract class ManagerStatus {
 
   @JsonProperty("Leader")
+  @Nullable
   public abstract Boolean leader();
 
   @JsonProperty("Reachability")
