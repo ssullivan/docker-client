@@ -66,6 +66,7 @@ import com.spotify.docker.client.messages.TopResults;
 import com.spotify.docker.client.messages.Version;
 import com.spotify.docker.client.messages.Volume;
 import com.spotify.docker.client.messages.VolumeList;
+import com.spotify.docker.client.messages.swarm.Config;
 import com.spotify.docker.client.messages.swarm.Node;
 import com.spotify.docker.client.messages.swarm.NodeInfo;
 import com.spotify.docker.client.messages.swarm.NodeSpec;
@@ -2859,7 +2860,29 @@ public interface DockerClient extends Closeable {
       super(name, value);
     }
   }
-  
+
+  /**
+   * List swarm configs. Only available in Docker API &gt;= 1.30.
+   *
+   * @return a list of configs
+   * @throws DockerException      if a server error occurred (500)
+   * @throws InterruptedException if the thread is interrupted
+   * @since Docker 1.13, API version 1.30
+   */
+  List<Config> listConfigs() throws DockerException, InterruptedException;
+
+  /**
+   * List swarm configs. Only available in Docker API &gt;= 1.30.
+   *
+   * @param criteria Config listing and filtering options
+   * @return a list of configs.
+   * @throws DockerException      if a server error occurred (500)
+   * @throws InterruptedException if the thread is interrupted
+   * @since Docker 1.13, API version 1.30
+   */
+  List<Config> listConfigs(final Config.Criteria criteria) throws DockerException,
+      InterruptedException;
+
   /**
    * List swarm nodes. Only available in Docker API &gt;= 1.24.
    *

@@ -53,6 +53,8 @@ import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.RegistryAuth;
 import com.spotify.docker.client.messages.RegistryConfigs;
 import com.spotify.docker.client.messages.ServiceCreateResponse;
+import com.spotify.docker.client.messages.swarm.Config;
+import com.spotify.docker.client.messages.swarm.ConfigSpec;
 import com.spotify.docker.client.messages.swarm.ContainerSpec;
 import com.spotify.docker.client.messages.swarm.EngineConfig;
 import com.spotify.docker.client.messages.swarm.Node;
@@ -591,6 +593,33 @@ public class DefaultDockerClientUnitTest {
         .setResponseCode(statusCode)
         .addHeader("Content-Type", "application/json")
     );
+  }
+
+  @Test
+  public void testListConfigs() throws Exception {
+    final DefaultDockerClient dockerClient = new DefaultDockerClient(builder);
+
+    enqueueServerApiVersion("1.30");
+
+    server.enqueue(new MockResponse()
+        .setResponseCode(200)
+        .addHeader("Content-Type", "application/json")
+        .setBody(
+            fixture("fixtures/1.30/listConfigs.json")
+        )
+    );
+
+    final List<Config> configs = dockerClient.listConfigs();
+    assertThat(configs.size(), equalTo(1));
+
+    final Config config = configs.get(0);
+
+    assertThat(config, notNullValue());
+    assertThat(config.id(), equalTo("ktnbjxoalbkvbvedmg1urrz8h"));
+    assertThat(config.version().index(), equalTo(11L));
+
+    final ConfigSpec configSpec = config.configSpec();
+    assertThat(configSpec.name(), equalTo("server.conf"));
   }
 
   @Test

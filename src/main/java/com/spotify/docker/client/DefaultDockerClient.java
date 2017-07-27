@@ -38,6 +38,7 @@ import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.GET;
 import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.HttpMethod.PUT;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM_TYPE;
@@ -109,6 +110,7 @@ import com.spotify.docker.client.messages.TopResults;
 import com.spotify.docker.client.messages.Version;
 import com.spotify.docker.client.messages.Volume;
 import com.spotify.docker.client.messages.VolumeList;
+import com.spotify.docker.client.messages.swarm.Config;
 import com.spotify.docker.client.messages.swarm.Node;
 import com.spotify.docker.client.messages.swarm.NodeInfo;
 import com.spotify.docker.client.messages.swarm.NodeSpec;
@@ -325,6 +327,8 @@ public class DefaultDockerClient implements DockerClient, Closeable {
   private static final GenericType<List<Task>> TASK_LIST = new GenericType<List<Task>>() { };
 
   private static final GenericType<List<Node>> NODE_LIST = new GenericType<List<Node>>() { };
+
+  private static final GenericType<List<Config>> CONFIG_LIST = new GenericType<List<Config>>() { };
 
   private static final GenericType<List<Secret>> SECRET_LIST = new GenericType<List<Secret>>() { };
 
@@ -1965,6 +1969,56 @@ public class DefaultDockerClient implements DockerClient, Closeable {
     WebTarget resource = resource().path("tasks");
     resource = resource.queryParam("filters", urlEncodeFilters(filters));
     return request(GET, TASK_LIST, resource, resource.request(APPLICATION_JSON_TYPE));
+  }
+
+  @Override
+  public List<Config> listConfigs() throws DockerException, InterruptedException {
+    assertApiVersionIsAbove("1.30");
+
+    WebTarget resource = resource().path("configs");
+
+    try {
+      return request(GET, CONFIG_LIST, resource, resource.request(APPLICATION_JSON_TYPE));
+    } catch (DockerRequestException e) {
+      switch (e.status()) {
+        case 503:
+          throw new NonSwarmNodeException("node is not part of a swarm", e);
+        default:
+          throw e;
+      }
+    }
+  }
+
+  @Override
+  public List<Config> listConfigs(Config.Criteria criteria)
+      throws DockerException, InterruptedException {
+    assertApiVersionIsAbove("1.30");
+
+    final Map<String, List<String>> filters = new HashMap<>();
+
+    if (criteria.configId() != null) {
+      filters.put("id", Collections.singletonList(criteria.configId()));
+    }
+    if (criteria.label() != null) {
+      filters.put("label", Collections.singletonList(criteria.label()));
+    }
+    if (criteria.name() != null) {
+      filters.put("name", Collections.singletonList(criteria.name()));
+    }
+
+    WebTarget resource = resource().path("configs");
+    resource = resource.queryParam("filters", urlEncodeFilters(filters));
+
+    try {
+      return request(GET, CONFIG_LIST, resource, resource.request(APPLICATION_JSON_TYPE));
+    } catch (DockerRequestException e) {
+      switch (e.status()) {
+        case 503:
+          throw new NonSwarmNodeException("node is not part of a swarm", e);
+        default:
+          throw e;
+      }
+    }
   }
 
   @Override
